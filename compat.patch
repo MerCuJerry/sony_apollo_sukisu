@@ -1,0 +1,52 @@
+diff --git a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+index a68a0cd6e93d..e1ed62570d96 100644
+--- a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
++++ b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+@@ -2770,7 +2770,7 @@ struct ce_ops ce_service_legacy = {
+ };
+ 
+ 
+-struct ce_ops *ce_services_legacy()
++struct ce_ops *ce_services_legacy(void)
+ {
+ 	return &ce_service_legacy;
+ }
+diff --git a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+index b2f627490d48..12d365372618 100644
+--- a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
++++ b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+@@ -78,7 +78,7 @@
+ 
+ static struct target_if_ctx *g_target_if_ctx;
+ 
+-struct target_if_ctx *target_if_get_ctx()
++struct target_if_ctx *target_if_get_ctx(void)
+ {
+ 	return g_target_if_ctx;
+ }
+diff --git a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+index 6aa77c3b47fa..62bdb253c84c 100644
+--- a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
++++ b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+@@ -289,7 +289,7 @@ struct wlan_cfg_dp_pdev_ctxt {
+  *
+  * Return: wlan_cfg_ctx - Handle to Configuration context
+  */
+-struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach()
++struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach(void)
+ {
+ 	int i = 0;
+ 
+diff --git a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+index 87af8dc330e0..682c6e5c7644 100644
+--- a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
++++ b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+@@ -1120,7 +1120,7 @@ QDF_STATUS populate_dot11f_rrm_ie(tpAniSirGlobal pMac,
+ 				tpPESession psessionEntry);
+ 
+ void populate_mdie(tpAniSirGlobal pMac, tDot11fIEMobilityDomain * pDot11f,
+-		   uint8_t mdie[]);
++		   uint8_t mdie[SIR_MDIE_SIZE]);
+ 
+ #ifdef WLAN_FEATURE_FILS_SK
+ /**

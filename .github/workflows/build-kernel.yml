@@ -1,0 +1,76 @@
+name: Build Kernel
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        devices:
+          - name: xz2c_dcm
+            config: tama_apollo_dcm_defconfig
+          - name: xz2c
+            config: tama_apollo_defconfig
+    name: Build Kernel for ${{ matrix.devices.name }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          path: patch
+
+      - name: Get Kernel Source Code
+        uses: actions/checkout@v5
+        with:
+          repository: ShujathMohd/android_kernel_sony_sdm845
+          ref: lineage-20
+          path: kernel
+      
+      - name: Install Package
+        run: sudo apt install -y p7zip-full
+      - name: Setup Cross-compile toolchain
+        run: |
+          mkdir -p toolchain
+          cd toolchain
+          wget -q https://github.com/Mandi-Sa/clang/releases/download/amd64-kernel-arm_static-22/llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
+          7za x llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
+          rm llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
+      # - name: Setup KernelSU
+      #   run: |
+      #     curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+      - name: Patch Kernel
+        working-directory: kernel
+        run: |
+          cp $GITHUB_WORKSPACE/patch/compat.patch ./
+          patch -p1 -F 3 < compat.patch || true
+
+      - name: Build Kernel for ${{ matrix.devices.name }}
+        working-directory: kernel
+        env:
+          args: |+
+            LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
+            CC=clang LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS_PERF+=-O3
+        run: |
+          export PATH=$GITHUB_WORKSPACE/toolchain/bin:$PATH
+          make -j$(nproc --all) ${args} ${{ matrix.devices.name }} all
+      
+      - name: Get AnyKernel3
+        uses: actions/checkout@v5
+        with:
+          repository: Kernel-SU/AnyKernel3
+          path: AnyKernel3
+      
+      - name: Make AnyKernel3
+        run: |
+          rm -rf ./AnyKernel3/.git
+          rm -rf ./AnyKernel3/push.sh
+          ls $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/
+          cp $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/AnyKernel3
+      
+      - name: Pack kernel image with AnyKernel3
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.devices.name }}_Kernel
+          path: AnyKernel3
