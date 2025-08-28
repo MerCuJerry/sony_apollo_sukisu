@@ -1,0 +1,117 @@
+From 6dec012e6489bf064bcaf9659b3494e5cbf8d771 Mon Sep 17 00:00:00 2001
+From: MerCuJerry <mercujerry@gmail.com>
+Date: Thu, 28 Aug 2025 20:04:32 +0800
+Subject: [PATCH] fix: fix build error while using clang
+
+---
+ drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c        | 2 +-
+ drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c     | 2 +-
+ drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h        | 1 +
+ .../qca-wifi-host-cmn/target_if/core/src/target_if_main.c     | 2 +-
+ drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c         | 2 +-
+ drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c              | 4 ++--
+ drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h  | 2 +-
+ 7 files changed, 8 insertions(+), 7 deletions(-)
+
+diff --git a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
+index 089fc040e..62db79e91 100644
+--- a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
++++ b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
+@@ -1747,7 +1747,7 @@ hif_send_head(struct hif_opaque_softc *hif_ctx,
+ 
+ 	if (qdf_unlikely(ce_hdl == NULL)) {
+ 		HIF_ERROR("%s: error CE handle is null", __func__);
+-		return A_ERROR;
++		return QDF_STATUS_ERROR;
+ 	}
+ 
+ 	QDF_NBUF_UPDATE_TX_PKT_COUNT(nbuf, QDF_NBUF_TX_PKT_HIF);
+diff --git a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+index a68a0cd6e..e1ed62570 100644
+--- a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
++++ b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
+@@ -2770,7 +2770,7 @@ struct ce_ops ce_service_legacy = {
+ };
+ 
+ 
+-struct ce_ops *ce_services_legacy()
++struct ce_ops *ce_services_legacy(void)
+ {
+ 	return &ce_service_legacy;
+ }
+diff --git a/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h b/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h
+index 00fe80602..3b37ad2af 100644
+--- a/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h
++++ b/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h
+@@ -81,6 +81,7 @@
+  * @QDF_STATUS_MAX: not a realy value just a place holder for max
+  */
+ typedef enum {
++	QDF_STATUS_ERROR = -1,
+ 	QDF_STATUS_SUCCESS,
+ 	QDF_STATUS_E_RESOURCES,
+ 	QDF_STATUS_E_NOMEM,
+diff --git a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+index b2f627490..12d365372 100644
+--- a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
++++ b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
+@@ -78,7 +78,7 @@
+ 
+ static struct target_if_ctx *g_target_if_ctx;
+ 
+-struct target_if_ctx *target_if_get_ctx()
++struct target_if_ctx *target_if_get_ctx(void)
+ {
+ 	return g_target_if_ctx;
+ }
+diff --git a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+index 6aa77c3b4..62bdb253c 100644
+--- a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
++++ b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
+@@ -289,7 +289,7 @@ struct wlan_cfg_dp_pdev_ctxt {
+  *
+  * Return: wlan_cfg_ctx - Handle to Configuration context
+  */
+-struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach()
++struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach(void)
+ {
+ 	int i = 0;
+ 
+diff --git a/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c b/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c
+index b2ca24249..04fe0ad00 100644
+--- a/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c
++++ b/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c
+@@ -616,7 +616,7 @@ htt_h2t_rx_ring_cfg_msg_hl(struct htt_pdev_t *pdev)
+ 
+ 	pkt = htt_htc_pkt_alloc(pdev);
+ 	if (!pkt)
+-		return A_ERROR; /* failure */
++		return QDF_STATUS_ERROR; /* failure */
+ 
+ 	/*
+ 	 * show that this is not a tx frame download
+@@ -632,7 +632,7 @@ htt_h2t_rx_ring_cfg_msg_hl(struct htt_pdev_t *pdev)
+ 		HTC_HEADER_LEN + HTC_HDR_ALIGNMENT_PADDING, 4, true);
+ 	if (!msg) {
+ 		htt_htc_pkt_free(pdev, pkt);
+-		return A_ERROR; /* failure */
++		return QDF_STATUS_ERROR; /* failure */
+ 	}
+ 	/*
+ 	 * Set the length of the message.
+diff --git a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+index 87af8dc33..682c6e5c7 100644
+--- a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
++++ b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
+@@ -1120,7 +1120,7 @@ QDF_STATUS populate_dot11f_rrm_ie(tpAniSirGlobal pMac,
+ 				tpPESession psessionEntry);
+ 
+ void populate_mdie(tpAniSirGlobal pMac, tDot11fIEMobilityDomain * pDot11f,
+-		   uint8_t mdie[]);
++		   uint8_t mdie[SIR_MDIE_SIZE]);
+ 
+ #ifdef WLAN_FEATURE_FILS_SK
+ /**
+-- 
+2.51.0
+
