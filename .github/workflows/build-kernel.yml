@@ -54,7 +54,7 @@ jobs:
             CC=clang LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS_PERF+=-O3
         run: |
           export PATH=$GITHUB_WORKSPACE/toolchain/bin:$PATH
-          make -j$(nproc --all) ${args} ${{ matrix.devices.name }} all
+          make -j$(nproc --all) ${args} ${{ matrix.devices.config }} all
       
       - name: Get AnyKernel3
         uses: actions/checkout@v5
