@@ -42,7 +42,7 @@ jobs:
       - name: Patch Kernel
         working-directory: kernel
         run: |
-          cp $GITHUB_WORKSPACE/patch/compat.patch ./
+          cp $GITHUB_WORKSPACE/patch/fix-build-error.patch ./
           patch -p1 < fix-build-error.patch
 
       - name: Build Kernel for ${{ matrix.devices.name }}
