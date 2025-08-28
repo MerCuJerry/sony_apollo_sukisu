@@ -16,6 +16,16 @@ jobs:
             config: tama_apollo_defconfig
     name: Build Kernel for ${{ matrix.devices.name }}
     steps:
+      - name: Maximize build space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 2048
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+
       - uses: actions/checkout@v5
         with:
           path: patch
@@ -28,7 +38,8 @@ jobs:
           path: kernel
       
       - name: Install Package
-        run: sudo apt install -y p7zip-full
+        run: sudo apt update && sudo apt install -y p7zip-full git
+      
       - name: Setup Cross-compile toolchain
         run: |
           mkdir -p toolchain
@@ -36,15 +47,73 @@ jobs:
           wget -q https://github.com/Mandi-Sa/clang/releases/download/amd64-kernel-arm_static-22/llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
           7za x llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
           rm llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
-      # - name: Setup KernelSU
-      #   run: |
-      #     curl -LSs "https://raw.githubusercontent.com/tiann/KernelSU/main/kernel/setup.sh" | bash -s v0.9.5
+      
+      - name: Set up SukiSU
+        working-directory: kernel
+        run: |
+          echo DATE=$(date +%F) >> $GITHUB_ENV
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
+          cd ./KernelSU
+          export KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10700)
+          echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
+          sed -i "s/DKSU_VERSION=12800/DKSU_VERSION=${KSU_VERSION}/" kernel/Makefile
+
+      - name: Get SukiSU Patches
+        uses: actions/checkout@v5
+        with:
+          repository: SukiSU-Ultra/SukiSU_patch
+          path: sukisu_patch
+      
+      - name: Get susfs4ksu Patches
+        run: |
+          git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.9 --depth=1
+          cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/fs/* $GITHUB_WORKSPACE/kernel/fs/
+          cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel/include/linux/
+
       - name: Patch Kernel
         working-directory: kernel
         run: |
-          cp $GITHUB_WORKSPACE/patch/fix-build-error.patch ./
-          patch -p1 < fix-build-error.patch
+          patch -p1 < $GITHUB_WORKSPACE/patch/fix-build-error.patch
+          patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
+          patch -p1 -F 3 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
+          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
 
+      - name: Add SUSFS Configuration Settings
+        working-directory: kernel/arch/arm64/configs
+        run: |
+          echo "CONFIG_KSU=y" >> ./${{ matrix.devices.config }}
+
+          # Add VFS configuration settings
+          echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./${{ matrix.devices.config }}
+          
+          # Add SUSFS configuration settings
+          echo "CONFIG_KSU_SUSFS=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./${{ matrix.devices.config }}
+
+          # Add BBR
+          echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_TCP_CONG_BBR=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_NET_SCH_FQ=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_TCP_CONG_BIC=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_TCP_CONG_CUBIC=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_TCP_CONG_HTCP=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./${{ matrix.devices.config }}
+      
       - name: Build Kernel for ${{ matrix.devices.name }}
         working-directory: kernel
         env:
