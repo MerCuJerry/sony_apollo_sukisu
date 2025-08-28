@@ -141,5 +141,5 @@ jobs:
       - name: Pack kernel image with AnyKernel3
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.devices.name }}_Kernel
+          name: ${{ matrix.devices.name }}_SukiSU_${{ env.KSUVER }}
           path: AnyKernel3
