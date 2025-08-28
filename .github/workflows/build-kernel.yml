@@ -68,14 +68,16 @@ jobs:
         run: |
           git clone https://gitlab.com/simonpunk/susfs4ksu.git -b kernel-4.9 --depth=1
           cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/fs/* $GITHUB_WORKSPACE/kernel/fs/
+          ls $GITHUB_WORKSPACE/kernel/fs | grep sus
           cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel/include/linux/
+          ls $GITHUB_WORKSPACE/kernel/include/linux | grep sus
 
       - name: Patch Kernel
         working-directory: kernel
         run: |
-          patch -p1 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
           patch -p1 < $GITHUB_WORKSPACE/patch/fix-build-error.patch
           patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
+          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
 
       - name: Add SUSFS Configuration Settings
