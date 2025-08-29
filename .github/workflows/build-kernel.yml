@@ -64,13 +64,6 @@ jobs:
           repository: SukiSU-Ultra/SukiSU_patch
           path: sukisu_patch
 
-      - name: Get susfs Upgrade Patches
-        uses: actions/checkout@v5
-        with:
-          repository:  JackA1ltman/NonGKI_Kernel_Build_2nd
-          sparse-checkout: Patches
-          path: susfs_patch
-
       - name: Get susfs4ksu
         run: |
           git clone -b kernel-4.9 --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git
@@ -83,16 +76,8 @@ jobs:
           patch -p1 < $GITHUB_WORKSPACE/patch/fix-build-error.patch
           patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
-          echo "Susfs"
-          patch -p1 -F 2 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch || true
-          echo "hidestuff"
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_157.patch || true
-          echo "157"
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_158_4.9.patch || true
-          echo "158"
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_159.patch || true
-          echo "159"
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_1510_4.9.patch || true
+          patch -p1 < $GITHUB_WORKSPACE/patch/susfs_upgrade_patch.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
 
       - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
