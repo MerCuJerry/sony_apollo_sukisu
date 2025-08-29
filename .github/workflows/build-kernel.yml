@@ -77,7 +77,6 @@ jobs:
           patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
           patch -p1 < $GITHUB_WORKSPACE/patch/susfs_upgrade_patch.patch
-          patch -p1 -F 2 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
 
       - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
