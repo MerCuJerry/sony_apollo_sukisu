@@ -52,7 +52,7 @@ jobs:
         working-directory: kernel
         run: |
           echo DATE=$(date +%F) >> $GITHUB_ENV
-          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s nongki
+          curl -LSs "https://raw.githubusercontent.com/SukiSU-Ultra/SukiSU-Ultra/main/kernel/setup.sh" | bash -s susfs-main
           cd ./KernelSU
           export KSU_VERSION=$(expr $(/usr/bin/git rev-list --count main) "+" 10700)
           echo "KSUVER=$KSU_VERSION" >> $GITHUB_ENV
@@ -63,18 +63,57 @@ jobs:
         with:
           repository: SukiSU-Ultra/SukiSU_patch
           path: sukisu_patch
-      
+
+      - name: Get susfs Upgrade Patches
+        uses: actions/checkout@v5
+        with:
+          repository:  JackA1ltman/NonGKI_Kernel_Build_2nd
+          sparse-checkout: Patches
+          path: susfs_patch
+
+      - name: Get susfs4ksu
+        run: |
+          git clone -b kernel-4.9 --depth=1 https://gitlab.com/simonpunk/susfs4ksu.git
+          cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/fs/* $GITHUB_WORKSPACE/kernel/fs/
+          cp $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/include/linux/* $GITHUB_WORKSPACE/kernel/include/linux/
+
       - name: Patch Kernel
         working-directory: kernel
         run: |
           patch -p1 < $GITHUB_WORKSPACE/patch/fix-build-error.patch
           patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/sukisu_patch/69_hide_stuff.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_157.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_158_4.9.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_159.patch
+          patch -p1 -F 2 < $GITHUB_WORKSPACE/susfs_patch/Patches/Patch/susfs_upgrade_to_1510_4.9.patch
 
-      - name: Add SUSFS Configuration Settings
+      - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
         run: |
           echo "CONFIG_KSU=y" >> ./${{ matrix.devices.config }}
+
+          # Add VFS configuration settings
+          echo "CONFIG_KSU_SUSFS_SUS_SU=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_MANUAL_HOOK=y" >> ./${{ matrix.devices.config }}
+          
+          # Add SUSFS configuration settings
+          echo "CONFIG_KSU_SUSFS=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_HAS_MAGIC_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_PATH=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_KSU_DEFAULT_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_SUS_BIND_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_KSTAT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SUS_OVERLAYFS=n" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_TRY_UMOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_AUTO_ADD_TRY_UMOUNT_FOR_BIND_MOUNT=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SPOOF_UNAME=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_ENABLE_LOG=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_HIDE_KSU_SUSFS_SYMBOLS=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_SPOOF_CMDLINE_OR_BOOTCONFIG=y" >> ./${{ matrix.devices.config }}
+          echo "CONFIG_KSU_SUSFS_OPEN_REDIRECT=y" >> ./${{ matrix.devices.config }}
 
           # Add BBR
           echo "CONFIG_TCP_CONG_ADVANCED=y" >> ./${{ matrix.devices.config }}
