@@ -138,7 +138,7 @@ jobs:
             CC=clang LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS_PERF+=-O3
         run: |
           export KBUILD_BUILD_TIMESTAMP=$(date)
-          export PATH=$GITHUB_WORKSPACE/toolchain/bin:$PATH
+          export PATH=/usr/lib/ccache:$GITHUB_WORKSPACE/toolchain/bin:$PATH
           make -j$(nproc --all) ${args} ${{ matrix.devices.config }} all
       
       - name: Get AnyKernel3
