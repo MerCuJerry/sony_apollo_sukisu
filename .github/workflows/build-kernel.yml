@@ -6,6 +6,12 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
+      CCACHE_NOHASHDIR: "true"
+      CCACHE_HARDLINK: "true"
+      CCACHE_DIR: /home/runner/.ccache_${{ matrix.devices.name }}
+      CCACHE_MAXSIZE: 8G
     strategy:
       fail-fast: false
       matrix:
@@ -26,6 +32,18 @@ jobs:
           remove-haskell: 'true'
           remove-codeql: 'true'
 
+      - name: Install Package
+        run: sudo apt update && sudo apt install -y p7zip-full git ccache
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: /home/runner/.ccache_${{ matrix.devices.name }}
+          key: ccache-${{ runner.os }}-${{ github.ref }}-${{ matrix.devices.name }}
+          restore-keys: |
+            ccache-${{ runner.os }}-${{ matrix.devices.name }}-
+            ccache-${{ runner.os }}-
+
       - uses: actions/checkout@v5
         with:
           path: patch
@@ -36,9 +54,6 @@ jobs:
           repository: ShujathMohd/android_kernel_sony_sdm845
           ref: lineage-20
           path: kernel
-      
-      - name: Install Package
-        run: sudo apt update && sudo apt install -y p7zip-full git
       
       - name: Setup Cross-compile toolchain
         run: |
