@@ -1,11 +1,11 @@
-From 07d3816cba8ba1b07b2d42843bd1a2bc1744f6ea Mon Sep 17 00:00:00 2001
+From 19ff5f59c549994c78e8350de3fd4b0387437b47 Mon Sep 17 00:00:00 2001
 From: MerCuJerry <mercujerry@gmail.com>
-Date: Fri, 29 Aug 2025 22:36:14 +0800
+Date: Fri, 29 Aug 2025 23:11:23 +0800
 Subject: [PATCH] susfs: upgrade susfs to v1.5.9
 
 ---
  fs/dcache.c               |  14 -
- fs/namei.c                | 276 ++++++++++++++--
+ fs/namei.c                | 272 ++++++++++++++--
  fs/namespace.c            | 139 ++++----
  fs/notify/fdinfo.c        |   4 +-
  fs/overlayfs/readdir.c    |  12 -
@@ -24,7 +24,7 @@ Subject: [PATCH] susfs: upgrade susfs to v1.5.9
  include/linux/susfs_def.h |  61 +++-
  kernel/kallsyms.c         |  24 +-
  security/selinux/avc.c    |  20 ++
- 20 files changed, 1115 insertions(+), 501 deletions(-)
+ 20 files changed, 1113 insertions(+), 499 deletions(-)
  delete mode 100644 fs/sus_su.c
  delete mode 100644 include/linux/sus_su.h
 
@@ -68,7 +68,7 @@ index 29d1a2d3f..e1abf9c02 100644
  		if (dentry->d_parent != parent)
  			goto next;
 diff --git a/fs/namei.c b/fs/namei.c
-index 6e91abb2c..e1bfbb29c 100644
+index 6e91abb2c..55b2c0898 100644
 --- a/fs/namei.c
 +++ b/fs/namei.c
 @@ -48,6 +48,15 @@
@@ -87,17 +87,6 @@ index 6e91abb2c..e1bfbb29c 100644
  /* [Feb-1997 T. Schoebel-Theuer]
   * Fundamental changes in the pathname lookup mechanisms (namei)
   * were necessary because of omirr.  The reason is that omirr needs
-@@ -57,8 +66,8 @@
-  * The new code replaces the old recursive symlink resolution with
-  * an iterative one (in case of non-nested symlink chains).  It does
-  * this with calls to <fs>_follow_link().
-- * As a side effect, dir_namei(), _namei() and follow_link() are now 
-- * replaced with a single function lookup_dentry() that can handle all 
-+ * As a side effect, dir_namei(), _namei() and follow_link() are now
-+ * replaced with a single function lookup_dentry() that can handle all
-  * the special cases of the former code.
-  *
-  * With the new dcache, the pathname is stored at each inode, at least as
 @@ -531,6 +540,9 @@ struct nameidata {
  	struct path	root;
  	struct inode	*inode; /* path.dentry.d_inode */
