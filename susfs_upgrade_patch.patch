@@ -1,20 +1,20 @@
-From 5b6cf0705aacb7f7c8ce88203bbaf4d77282b1f7 Mon Sep 17 00:00:00 2001
+From 07d3816cba8ba1b07b2d42843bd1a2bc1744f6ea Mon Sep 17 00:00:00 2001
 From: MerCuJerry <mercujerry@gmail.com>
-Date: Fri, 29 Aug 2025 12:52:11 +0800
+Date: Fri, 29 Aug 2025 22:36:14 +0800
 Subject: [PATCH] susfs: upgrade susfs to v1.5.9
 
 ---
  fs/dcache.c               |  14 -
  fs/namei.c                | 276 ++++++++++++++--
- fs/namespace.c            | 145 +++++----
+ fs/namespace.c            | 139 ++++----
  fs/notify/fdinfo.c        |   4 +-
- fs/overlayfs/readdir.c    |  13 +-
+ fs/overlayfs/readdir.c    |  12 -
  fs/overlayfs/super.c      |  12 -
  fs/proc/fd.c              |   2 +-
  fs/proc/task_mmu.c        |   2 +-
  fs/proc_namespace.c       |  10 +-
  fs/readdir.c              | 175 ++++++++++-
- fs/stat.c                 |   8 +-
+ fs/stat.c                 |   4 +-
  fs/statfs.c               |  26 +-
  fs/sus_su.c               | 140 ---------
  fs/susfs.c                | 647 +++++++++++++++++++++++++++++---------
@@ -24,7 +24,7 @@ Subject: [PATCH] susfs: upgrade susfs to v1.5.9
  include/linux/susfs_def.h |  61 +++-
  kernel/kallsyms.c         |  24 +-
  security/selinux/avc.c    |  20 ++
- 20 files changed, 1121 insertions(+), 506 deletions(-)
+ 20 files changed, 1115 insertions(+), 501 deletions(-)
  delete mode 100644 fs/sus_su.c
  delete mode 100644 include/linux/sus_su.h
 
@@ -587,7 +587,7 @@ index 6e91abb2c..e1bfbb29c 100644
  		if (!IS_ERR(fake_pathname)) {
  			restore_nameidata();
 diff --git a/fs/namespace.c b/fs/namespace.c
-index ad2b50f16..66f71f53f 100644
+index ad2b50f16..49ea24359 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
 @@ -39,7 +39,6 @@ static DEFINE_IDA(susfs_mnt_group_ida);
@@ -717,15 +717,6 @@ index ad2b50f16..66f71f53f 100644
  	}
  #endif
  
-@@ -1870,7 +1900,7 @@ void __detach_mounts(struct dentry *dentry)
- 	namespace_unlock();
- }
- 
--/* 
-+/*
-  * Is the caller allowed to modify his namespace?
-  */
- static inline bool may_mount(void)
 @@ -2008,6 +2038,9 @@ struct mount *copy_tree(struct mount *mnt, struct dentry *dentry,
  					int flag)
  {
@@ -760,15 +751,6 @@ index ad2b50f16..66f71f53f 100644
  			lock_mount_hash();
  			list_add_tail(&q->mnt_list, &res->mnt_list);
  			attach_mnt(q, parent, p->mnt_mp);
-@@ -2465,7 +2508,7 @@ static int do_loopback(struct path *path, const char *old_name,
- 
- 	err = -EINVAL;
- 	if (mnt_ns_loop(old_path.dentry))
--		goto out; 
-+		goto out;
- 
- 	mp = lock_mount(path);
- 	err = PTR_ERR(mp);
 @@ -3115,15 +3158,6 @@ long do_mount(const char *dev_name, const char __user *dir_name,
  	else
  		retval = do_new_mount(&path, type_page, flags, mnt_flags,
@@ -849,13 +831,6 @@ index ad2b50f16..66f71f53f 100644
  
  	namespace_unlock();
  
-@@ -3864,4 +3887,4 @@ bool susfs_is_mnt_devname_ksu(struct path *path) {
- 	}
- 	return false;
- }
--#endif
-\ No newline at end of file
-+#endif
 diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
 index b82f36eb1..35babff62 100644
 --- a/fs/notify/fdinfo.c
@@ -872,10 +847,10 @@ index b82f36eb1..35babff62 100644
  			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
  			char *dpath;
 diff --git a/fs/overlayfs/readdir.c b/fs/overlayfs/readdir.c
-index 03f0f58dc..34d3f2907 100644
+index 03f0f58dc..4fcbfd095 100644
 --- a/fs/overlayfs/readdir.c
 +++ b/fs/overlayfs/readdir.c
-@@ -499,19 +499,8 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
+@@ -499,19 +499,7 @@ static int ovl_dir_open(struct inode *inode, struct file *file)
  	if (!od)
  		return -ENOMEM;
  
@@ -892,7 +867,6 @@ index 03f0f58dc..34d3f2907 100644
 -#ifdef CONFIG_KSU_SUSFS_SUS_OVERLAYFS
 -bypass_orig_flow:
 -#endif
-+
  	realfile = ovl_path_open(&realpath, file->f_flags);
  	if (IS_ERR(realfile)) {
  		kfree(od);
@@ -1282,7 +1256,7 @@ index 17f50d942..9e4eff275 100644
  	if (error >= 0)
  		error = buf.error;
 diff --git a/fs/stat.c b/fs/stat.c
-index 0f89b2ce8..bf894cdd9 100644
+index 0f89b2ce8..ee11a1fde 100644
 --- a/fs/stat.c
 +++ b/fs/stat.c
 @@ -28,8 +28,8 @@ extern void susfs_sus_ino_for_generic_fillattr(unsigned long ino, struct kstat *
@@ -1296,24 +1270,6 @@ index 0f89b2ce8..bf894cdd9 100644
  		susfs_sus_ino_for_generic_fillattr(inode->i_ino, stat);
  		stat->mode = inode->i_mode;
  		stat->rdev = inode->i_rdev;
-@@ -165,7 +165,7 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- {
- 	static int warncount = 5;
- 	struct __old_kernel_stat tmp;
--	
-+
- 	if (warncount > 0) {
- 		warncount--;
- 		printk(KERN_WARNING "VFS: Warning: %s using old stat() call. Recompile your binary.\n",
-@@ -190,7 +190,7 @@ static int cp_old_stat(struct kstat *stat, struct __old_kernel_stat __user * sta
- #if BITS_PER_LONG == 32
- 	if (stat->size > MAX_NON_LFS)
- 		return -EOVERFLOW;
--#endif	
-+#endif
- 	tmp.st_size = stat->size;
- 	tmp.st_atime = stat->atime.tv_sec;
- 	tmp.st_mtime = stat->mtime.tv_sec;
 diff --git a/fs/statfs.c b/fs/statfs.c
 index add7c1ed4..dc433176f 100644
 --- a/fs/statfs.c
