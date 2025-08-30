@@ -52,7 +52,7 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: LineageOS/android_kernel_sony_sdm845
-          ref: lineage-20
+          ref: lineage-22.2
           path: kernel
       
       - name: Setup Cross-compile toolchain
@@ -88,7 +88,7 @@ jobs:
       - name: Patch Kernel
         working-directory: kernel
         run: |
-          patch -p1 < $GITHUB_WORKSPACE/Patches/fix-build-error.patch
+          patch -p1 < $GITHUB_WORKSPACE/Patches/fix-build-error.patch || true
           patch -p1 < $GITHUB_WORKSPACE/Patches/ksu-syscall-hooks.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
           patch -p1 < $GITHUB_WORKSPACE/Patches/susfs_upgrade_patch.patch
