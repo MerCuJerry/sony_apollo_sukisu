@@ -1,0 +1,1 @@
+# Build Kernel for Sony Xperia XZ2 Compact(apollo) with SukiSU
