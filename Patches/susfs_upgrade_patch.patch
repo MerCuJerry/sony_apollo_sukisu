@@ -820,21 +820,6 @@ index ad2b50f16..49ea24359 100644
  
  	namespace_unlock();
  
-diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index b82f36eb1..35babff62 100644
---- a/fs/notify/fdinfo.c
-+++ b/fs/notify/fdinfo.c
-@@ -103,8 +103,8 @@ static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- 	if (inode) {
- #ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
- 		u32 mask = mark->mask & IN_ALL_EVENTS;
--		if (likely(current->susfs_task_state & TASK_STRUCT_NON_ROOT_USER_APP_PROC) &&
--				unlikely(inode->i_state & INODE_STATE_SUS_KSTAT)) {
-+		if (likely(susfs_is_current_non_root_user_app_proc()) &&
-+				unlikely(inode->i_mapping->flags & BIT_SUS_KSTAT)) {
- 			struct path path;
- 			char *pathname = kmalloc(PAGE_SIZE, GFP_KERNEL);
- 			char *dpath;
 diff --git a/fs/overlayfs/readdir.c b/fs/overlayfs/readdir.c
 index 03f0f58dc..4fcbfd095 100644
 --- a/fs/overlayfs/readdir.c

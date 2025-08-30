@@ -731,7 +731,6 @@ index 532baf2380f78..7126c92387133 100644
 +#endif
 \ No newline at end of file
 diff --git a/fs/notify/fdinfo.c b/fs/notify/fdinfo.c
-index fd98e5100cabe..b82f36eb18acb 100644
 --- a/fs/notify/fdinfo.c
 +++ b/fs/notify/fdinfo.c
 @@ -12,6 +12,9 @@
@@ -785,8 +784,8 @@ index fd98e5100cabe..b82f36eb18acb 100644
  	struct inotify_inode_mark *inode_mark;
  	struct inode *inode;
 @@ -83,6 +101,36 @@ static void inotify_fdinfo(struct seq_file *m, struct fsnotify_mark *mark)
- 	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
- 	inode = igrab(fsnotify_conn_inode(mark->connector));
+	inode_mark = container_of(mark, struct inotify_inode_mark, fsn_mark);
+	inode = igrab(mark->inode);
  	if (inode) {
 +#ifdef CONFIG_KSU_SUSFS_SUS_MOUNT
 +		if (likely(susfs_is_current_non_root_user_app_proc()) &&
