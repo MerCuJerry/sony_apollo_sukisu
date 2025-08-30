@@ -17,8 +17,10 @@ jobs:
       matrix:
         devices:
           - name: xz2c_dcm
-            config: tama_apollo_dcm_defconfig
+            is_docomo: true
+            config: tama_apollo_defconfig
           - name: xz2c
+            is_docomo: false
             config: tama_apollo_defconfig
     name: Build Kernel for ${{ matrix.devices.name }}
     steps:
@@ -49,7 +51,7 @@ jobs:
       - name: Get Kernel Source Code
         uses: actions/checkout@v5
         with:
-          repository: ShujathMohd/android_kernel_sony_sdm845
+          repository: LineageOS/android_kernel_sony_sdm845
           ref: lineage-20
           path: kernel
       
@@ -90,7 +92,16 @@ jobs:
           patch -p1 < $GITHUB_WORKSPACE/Patches/ksu-syscall-hooks.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
           patch -p1 < $GITHUB_WORKSPACE/Patches/susfs_upgrade_patch.patch
-
+      
+      - name: add docomo patch
+        if: ${{ matrix.devices.is_docomo }}
+        run: |
+          patch -p1 < $GITHUB_WORKSPACE/Patches/add_docomo_nfc_driver.patch
+          sed -i "s/CONFIG_MACH_SONY_APOLLO=y/CONFIG_MACH_SONY_APOLLO_DCM=y/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
+          sed -i "s/CONFIG_NFC_NQ=y/#CONFIG_NFC_NQ=n/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
+          sed -i "s/CONFIG_NFC_PN553_DEVICES=y/CONFIG_NFC_CARILLON=y/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
+          echo "CONFIG_ONESEG_TUNER_SMTVJ19X=y" >> $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
+        
       - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
         run: |
