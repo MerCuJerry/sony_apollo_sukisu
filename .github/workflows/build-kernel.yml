@@ -94,6 +94,7 @@ jobs:
           patch -p1 < $GITHUB_WORKSPACE/Patches/susfs_upgrade_patch.patch
       
       - name: add docomo patch
+        working-directory: kernel
         if: ${{ matrix.devices.is_docomo }}
         run: |
           patch -p1 < $GITHUB_WORKSPACE/Patches/add_docomo_nfc_driver.patch
