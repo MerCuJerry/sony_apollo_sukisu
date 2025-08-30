@@ -45,8 +45,6 @@ jobs:
             ccache-${{ runner.os }}-
 
       - uses: actions/checkout@v5
-        with:
-          path: patch
 
       - name: Get Kernel Source Code
         uses: actions/checkout@v5
@@ -88,10 +86,10 @@ jobs:
       - name: Patch Kernel
         working-directory: kernel
         run: |
-          patch -p1 < $GITHUB_WORKSPACE/patch/fix-build-error.patch
-          patch -p1 < $GITHUB_WORKSPACE/patch/ksu-syscall-hooks.patch
+          patch -p1 < $GITHUB_WORKSPACE/Patches/fix-build-error.patch
+          patch -p1 < $GITHUB_WORKSPACE/Patches/ksu-syscall-hooks.patch
           patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
-          patch -p1 < $GITHUB_WORKSPACE/patch/susfs_upgrade_patch.patch
+          patch -p1 < $GITHUB_WORKSPACE/Patches/susfs_upgrade_patch.patch
 
       - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
@@ -141,16 +139,8 @@ jobs:
           export PATH=/usr/lib/ccache:$GITHUB_WORKSPACE/toolchain/bin:$PATH
           make -j$(nproc --all) ${args} ${{ matrix.devices.config }} all
       
-      - name: Get AnyKernel3
-        uses: actions/checkout@v5
-        with:
-          repository: Kernel-SU/AnyKernel3
-          path: AnyKernel3
-      
       - name: Make AnyKernel3
         run: |
-          rm -rf ./AnyKernel3/.git
-          rm -rf ./AnyKernel3/push.sh
           ls $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/
           cp $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/AnyKernel3
       
