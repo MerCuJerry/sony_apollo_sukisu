@@ -133,7 +133,7 @@ jobs:
           echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./${{ matrix.devices.config }}
 
           if [ "${{ inputs.enable_feature_kpm }}" = "true" ]; then
-            echo "CONFIG_KPM=y" >> $GITHUB_WORKSPACE/Patches/ares_user_defconfig
+            echo "CONFIG_KPM=y" >> ./${{ matrix.devices.config }}
           fi
       
       - name: Build Kernel for ${{ matrix.devices.name }}
@@ -167,3 +167,4 @@ jobs:
         with:
           name: ${{ matrix.devices.name }}_SukiSU_${{ env.KSUVER }}
           path: AnyKernel3
+          compression-level: 9
