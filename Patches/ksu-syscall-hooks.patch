@@ -1,6 +1,6 @@
-From 0a195521c64d1d2a07f52a40d125e1836e85ea8f Mon Sep 17 00:00:00 2001
+From f64f30d1a0c3d3e9d42e5b4d9e574e98b8b37584 Mon Sep 17 00:00:00 2001
 From: MerCuJerry <mercujerry@gmail.com>
-Date: Thu, 28 Aug 2025 20:53:20 +0800
+Date: Fri, 5 Sep 2025 20:16:10 +0800
 Subject: [PATCH] ksu: manual patching kernel for ksu (without safemode)
 
 ---
@@ -39,7 +39,7 @@ index 81be3ba17..babc997ae 100644
  		return NULL;
  	return dentry->d_fsdata;
 diff --git a/fs/exec.c b/fs/exec.c
-index 3291665e4..8c1e058e2 100644
+index 5addf3b00..acdf54ac8 100644
 --- a/fs/exec.c
 +++ b/fs/exec.c
 @@ -1676,6 +1676,11 @@ static int exec_binprm(struct linux_binprm *bprm)
@@ -69,12 +69,12 @@ index 3291665e4..8c1e058e2 100644
  		return PTR_ERR(filename);
  
 diff --git a/fs/namespace.c b/fs/namespace.c
-index d7a32893c..6c2543e27 100644
+index 21fd423b1..9bf64721c 100644
 --- a/fs/namespace.c
 +++ b/fs/namespace.c
-@@ -1695,6 +1695,39 @@ static inline bool may_mandlock(void)
- 	return capable(CAP_SYS_ADMIN);
+@@ -1711,6 +1711,39 @@ static inline bool may_mandlock(void)
  }
+ #endif
  
 +static int can_umount(const struct path *path, int flags)
 +{
@@ -113,7 +113,7 @@ index d7a32893c..6c2543e27 100644
   * Now umount can handle mount points as well as block devices.
   * This is important for filesystems which use unnamed block devices.
 diff --git a/fs/open.c b/fs/open.c
-index e9a053283..eedbd7f18 100644
+index f2b82c462..d536706b3 100644
 --- a/fs/open.c
 +++ b/fs/open.c
 @@ -360,6 +360,9 @@ SYSCALL_DEFINE4(fallocate, int, fd, int, mode, loff_t, offset, loff_t, len)
@@ -184,10 +184,10 @@ index 068fdbcc9..cd83e0d30 100644
  		      AT_EMPTY_PATH)) != 0)
  		goto out;
 diff --git a/security/selinux/hooks.c b/security/selinux/hooks.c
-index ca3ab4bf7..1ec0f6299 100644
+index 4abba0e16..157aba6d8 100644
 --- a/security/selinux/hooks.c
 +++ b/security/selinux/hooks.c
-@@ -2302,16 +2302,36 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
+@@ -2318,16 +2318,36 @@ static int check_nnp_nosuid(const struct linux_binprm *bprm,
  			    const struct task_security_struct *old_tsec,
  			    const struct task_security_struct *new_tsec)
  {

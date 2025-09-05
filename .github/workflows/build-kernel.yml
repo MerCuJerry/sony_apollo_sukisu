@@ -2,6 +2,12 @@ name: Build Kernel
 
 on:
   workflow_dispatch:
+    inputs:
+      enable_feature_kpm:
+        description: "是否启用kpm"
+        required: false
+        default: false
+        type: boolean
 
 jobs:
   build:
@@ -17,10 +23,8 @@ jobs:
       matrix:
         devices:
           - name: xz2c_dcm
-            is_docomo: true
-            config: tama_apollo_defconfig
+            config: tama_apollo_kddi_defconfig
           - name: xz2c
-            is_docomo: false
             config: tama_apollo_defconfig
     name: Build Kernel for ${{ matrix.devices.name }}
     steps:
@@ -52,16 +56,16 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: LineageOS/android_kernel_sony_sdm845
-          ref: lineage-20
+          ref: lineage-22.2
           path: kernel
       
       - name: Setup Cross-compile toolchain
         run: |
           mkdir -p toolchain
           cd toolchain
-          wget -q https://github.com/Mandi-Sa/clang/releases/download/amd64-kernel-arm_static-22/llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
-          7za x llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
-          rm llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250824.7z
+          wget -q https://github.com/Mandi-Sa/clang/releases/download/amd64-kernel-arm_static-22/llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250831.7z
+          7za x llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250831.7z
+          rm llvm22.0.0-binutils2.44_amd64-kernel-arm_static-20250831.7z
       
       - name: Set up SukiSU
         working-directory: kernel
@@ -90,18 +94,7 @@ jobs:
         run: |
           patch -p1 < $GITHUB_WORKSPACE/Patches/fix-build-error.patch
           patch -p1 < $GITHUB_WORKSPACE/Patches/ksu-syscall-hooks.patch
-          patch -p1 -F 3 < $GITHUB_WORKSPACE/susfs4ksu/kernel_patches/50_add_susfs_in_kernel-4.9.patch
-          patch -p1 < $GITHUB_WORKSPACE/Patches/susfs_upgrade_patch.patch
-      
-      - name: add docomo patch
-        working-directory: kernel
-        if: ${{ matrix.devices.is_docomo }}
-        run: |
-          patch -p1 < $GITHUB_WORKSPACE/Patches/add_docomo_nfc_driver.patch
-          sed -i "s/CONFIG_MACH_SONY_APOLLO=y/CONFIG_MACH_SONY_APOLLO_DCM=y/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
-          sed -i "s/CONFIG_NFC_NQ=y/#CONFIG_NFC_NQ=n/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
-          sed -i "s/CONFIG_NFC_PN553_DEVICES=y/CONFIG_NFC_CARILLON=y/" $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
-          echo "CONFIG_ONESEG_TUNER_SMTVJ19X=y" >> $GITHUB_WORKSPACE/kernel/arch/arm64/configs/${{ matrix.devices.config }}
+          patch -p1 < $GITHUB_WORKSPACE/Patches/apply-susfs.patch
         
       - name: Add Kernel Build Configuration Settings
         working-directory: kernel/arch/arm64/configs
@@ -138,23 +131,36 @@ jobs:
           echo "CONFIG_TCP_CONG_WESTWOOD=n" >> ./${{ matrix.devices.config }}
           echo "CONFIG_TCP_CONG_HTCP=n" >> ./${{ matrix.devices.config }}
           echo "CONFIG_DEFAULT_TCP_CONG=bbr" >> ./${{ matrix.devices.config }}
+
+          if [ "${{ inputs.enable_feature_kpm }}" = "true" ]; then
+            echo "CONFIG_KPM=y" >> $GITHUB_WORKSPACE/Patches/ares_user_defconfig
+          fi
       
       - name: Build Kernel for ${{ matrix.devices.name }}
         working-directory: kernel
         env:
           args: |+
             LLVM=1 ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-
-            CROSS_COMPILE_ARM32=arm-linux-gnueabi- CROSS_COMPILE_COMPAT=arm-linux-gnueabi-
-            CC=clang LD=ld.lld HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS_PERF+=-O3
+            CROSS_COMPILE_ARM32=arm-linux-gnueabi- CC=clang LD=ld.lld
+            HOSTLD=ld.lld O=out KCFLAGS+=-O2 KCFLAGS_PERF+=-O3
         run: |
           export KBUILD_BUILD_TIMESTAMP=$(date)
           export PATH=/usr/lib/ccache:$GITHUB_WORKSPACE/toolchain/bin:$PATH
           make -j$(nproc --all) ${args} ${{ matrix.devices.config }} all
       
+      - name: Apply KernelPatch for KPM
+        if: ${{ inputs.enable_feature_kpm }}
+        working-directory: kernel/out/arch/arm64/boot
+        run: |
+          cp $GITHUB_WORKSPACE/sukisu_patch/kpm/patch_linux .
+          chmod +x patch_linux
+          ./patch_linux
+          mv oImage Image
+
       - name: Make AnyKernel3
         run: |
           ls $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/
-          cp $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/Image.gz-dtb $GITHUB_WORKSPACE/AnyKernel3
+          cp $GITHUB_WORKSPACE/kernel/out/arch/arm64/boot/Image $GITHUB_WORKSPACE/AnyKernel3
       
       - name: Pack kernel image with AnyKernel3
         uses: actions/upload-artifact@v4

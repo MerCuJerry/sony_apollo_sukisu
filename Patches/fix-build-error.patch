@@ -1,263 +1,37 @@
-From 7b7cd94461014c0b0bd4b6cf85374b87ad6d0631 Mon Sep 17 00:00:00 2001
+From b13f64402642e3cc50281946add4d90fcbf319b6 Mon Sep 17 00:00:00 2001
 From: MerCuJerry <mercujerry@gmail.com>
-Date: Sun, 31 Aug 2025 21:25:52 +0800
-Subject: [PATCH] fix: fix build error and warning while using clang
+Date: Fri, 5 Sep 2025 20:15:29 +0800
+Subject: [PATCH] fix: fix build error while using clang
 
 ---
- drivers/hwtracing/coresight/coresight-tmc.c            |  4 ++--
- drivers/input/misc/bu520x1nvx.c                        |  4 ++--
- .../touchscreen/synaptics_dsx/synaptics_dsx_core.c     |  2 +-
- .../media/platform/msm/camera/cam_cdm/cam_cdm_intf.c   |  3 +--
- .../msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c     | 10 +++++-----
- .../cam_sensor_module/cam_flash/cam_flash_core.c       |  4 ++--
- .../media/platform/msm/camera/cam_smmu/cam_smmu_api.c  |  2 +-
- drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c            |  4 ++--
- drivers/power/supply/qcom/qpnp-fg-gen3.c               |  2 +-
- drivers/soc/qcom/icnss.c                               |  2 +-
- drivers/soc/qcom/msm_minidump.c                        |  2 +-
- drivers/staging/android/lowmemorykiller.h              |  2 +-
- drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c |  2 +-
- .../staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c  |  2 +-
- drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h |  1 +
- .../target_if/core/src/target_if_main.c                |  2 +-
- drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c  |  2 +-
- drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c       |  4 ++--
- .../qcacld-3.0/core/mac/src/include/parser_api.h       |  2 +-
- drivers/usb/gadget/function/f_accessory.c              |  4 ++--
- include/linux/leds.h                                   |  1 +
- scripts/kallsyms.c                                     |  2 +-
- scripts/kconfig/symbol.c                               |  3 ++-
- techpack/audio/asoc/codecs/wsa881x.c                   |  2 +-
- 24 files changed, 35 insertions(+), 33 deletions(-)
+ arch/arm64/Makefile                                    | 6 +-----
+ drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c | 2 +-
+ drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h | 1 +
+ drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c       | 4 ++--
+ 4 files changed, 5 insertions(+), 8 deletions(-)
 
-diff --git a/drivers/hwtracing/coresight/coresight-tmc.c b/drivers/hwtracing/coresight/coresight-tmc.c
-index 51c57a47e..d5b8d1fa4 100644
---- a/drivers/hwtracing/coresight/coresight-tmc.c
-+++ b/drivers/hwtracing/coresight/coresight-tmc.c
-@@ -424,7 +424,7 @@ static ssize_t out_mode_store(struct device *dev,
- 
- 	if (strlen(buf) >= 10)
- 		return -EINVAL;
--	if (sscanf(buf, "%10s", str) != 1)
-+	if (sscanf(buf, "%9s", str) != 1)
- 		return -EINVAL;
- 
- 	mutex_lock(&drvdata->mem_lock);
-@@ -526,7 +526,7 @@ static ssize_t mem_type_store(struct device *dev,
- 
- 	if (strlen(buf) >= 10)
- 		return -EINVAL;
--	if (sscanf(buf, "%10s", str) != 1)
-+	if (sscanf(buf, "%9s", str) != 1)
- 		return -EINVAL;
- 
- 	mutex_lock(&drvdata->mem_lock);
-diff --git a/drivers/input/misc/bu520x1nvx.c b/drivers/input/misc/bu520x1nvx.c
-index 4b1518b1e..70b25b602 100644
---- a/drivers/input/misc/bu520x1nvx.c
-+++ b/drivers/input/misc/bu520x1nvx.c
-@@ -592,7 +592,7 @@ static int bu520x1nvx_probe(struct platform_device *pdev)
- 		switch_dev_unregister(&ddata->switch_lid);
- 	if (ddata->switch_keydock.dev)
- 		switch_dev_unregister(&ddata->switch_keydock);
--	if (&ddata->input_dev->dev) {
-+	if (&ddata->input_dev->dev != NULL) {
- 		input_unregister_device(ddata->input_dev);
- 		input_free_device(ddata->input_dev);
- 	}
-@@ -628,7 +628,7 @@ static int bu520x1nvx_remove(struct platform_device *pdev)
- 		switch_dev_unregister(&ddata->switch_lid);
- 	if (ddata->switch_keydock.dev)
- 		switch_dev_unregister(&ddata->switch_keydock);
--	if (&ddata->input_dev->dev)
-+	if (&ddata->input_dev->dev != NULL)
- 		input_unregister_device(ddata->input_dev);
- #else
- 	input_unregister_device(ddata->input_dev);
-diff --git a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
-index 3d808fb3d..e1ec290e8 100644
---- a/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
-+++ b/drivers/input/touchscreen/synaptics_dsx/synaptics_dsx_core.c
-@@ -3309,7 +3309,7 @@ static int synaptics_rmi4_gpio_setup(int gpio, bool config, int dir, int state)
- 	unsigned char buf[16];
- 
- 	if (config) {
--		snprintf(buf, PAGE_SIZE, "dsx_gpio_%u\n", gpio);
-+		snprintf(buf, ARRAY_SIZE(buf), "dsx_gpio_%u\n", gpio);
- 
- 		retval = gpio_request(gpio, buf);
- 		if (retval) {
-diff --git a/drivers/media/platform/msm/camera/cam_cdm/cam_cdm_intf.c b/drivers/media/platform/msm/camera/cam_cdm/cam_cdm_intf.c
-index fa98be228..2993c85e1 100644
---- a/drivers/media/platform/msm/camera/cam_cdm/cam_cdm_intf.c
-+++ b/drivers/media/platform/msm/camera/cam_cdm/cam_cdm_intf.c
-@@ -166,8 +166,7 @@ int cam_cdm_acquire(struct cam_cdm_acquire_data *data)
- 	struct cam_hw_intf *hw;
- 	uint32_t hw_index = 0;
- 
--	if ((!data) || (!data->identifier) || (!data->base_array) ||
--		(!data->base_array_cnt))
-+	if ((!data) || (!data->base_array_cnt))
- 		return -EINVAL;
- 
- 	if (get_cdm_mgr_refcount()) {
-diff --git a/drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c b/drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
-index c72f9ee5c..f711d5107 100644
---- a/drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
-+++ b/drivers/media/platform/msm/camera/cam_isp/isp_hw_mgr/cam_ife_hw_mgr.c
-@@ -607,7 +607,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_out_rdi(
- 	ife_out_res->hw_res[0] = vfe_acquire.vfe_out.rsrc_node;
- 	ife_out_res->is_dual_vfe = 0;
- 	ife_out_res->res_id = vfe_out_res_id;
--	ife_out_res->res_type = CAM_ISP_RESOURCE_VFE_OUT;
-+	ife_out_res->res_type = (enum cam_ife_hw_mgr_res_type)CAM_ISP_RESOURCE_VFE_OUT;
- 	ife_src_res->child[ife_src_res->num_children++] = ife_out_res;
- 
- 	return 0;
-@@ -695,7 +695,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_out_pixel(
- 				ife_out_res->hw_res[j]->res_id);
- 
- 		}
--		ife_out_res->res_type = CAM_ISP_RESOURCE_VFE_OUT;
-+		ife_out_res->res_type = (enum cam_ife_hw_mgr_res_type)CAM_ISP_RESOURCE_VFE_OUT;
- 		ife_out_res->res_id = out_port->res_type;
- 		ife_out_res->parent = ife_src_res;
- 		ife_src_res->child[ife_src_res->num_children++] = ife_out_res;
-@@ -808,7 +808,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_src(
- 			CAM_ERR(CAM_ISP, "Wrong IFE CSID Resource Node");
- 			goto err;
- 		}
--		ife_src_res->res_type = vfe_acquire.rsrc_type;
-+		ife_src_res->res_type = (enum cam_ife_hw_mgr_res_type)vfe_acquire.rsrc_type;
- 		ife_src_res->res_id = vfe_acquire.vfe_in.res_id;
- 		ife_src_res->is_dual_vfe = csid_res->is_dual_vfe;
- 
-@@ -983,7 +983,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_csid_ipp(
- 	csid_acquire.in_port = in_port;
- 	csid_acquire.out_port = in_port->data;
- 
--	csid_res->res_type = CAM_ISP_RESOURCE_PIX_PATH;
-+	csid_res->res_type = (enum cam_ife_hw_mgr_res_type)CAM_ISP_RESOURCE_PIX_PATH;
- 	csid_res->res_id = CAM_IFE_PIX_PATH_RES_IPP;
- 	csid_res->is_dual_vfe = in_port->usage_type;
- 
-@@ -1166,7 +1166,7 @@ static int cam_ife_hw_mgr_acquire_res_ife_csid_rdi(
- 				goto err;
- 			}
- 
--			csid_res->res_type = CAM_ISP_RESOURCE_PIX_PATH;
-+			csid_res->res_type = (enum cam_ife_hw_mgr_res_type)CAM_ISP_RESOURCE_PIX_PATH;
- 			csid_res->res_id = csid_acquire.res_id;
- 			csid_res->is_dual_vfe = 0;
- 			csid_res->hw_res[0] = csid_acquire.node_res;
-diff --git a/drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c b/drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c
-index 284fa58a9..09ad97dee 100644
---- a/drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c
-+++ b/drivers/media/platform/msm/camera/cam_sensor_module/cam_flash/cam_flash_core.c
-@@ -234,7 +234,7 @@ static int cam_flash_ops(struct cam_flash_ctrl *flash_ctrl,
- 	if (flash_ctrl->switch_trigger)
- 		cam_res_mgr_led_trigger_event(
- 			flash_ctrl->switch_trigger,
--			LED_SWITCH_ON);
-+			LED_ON);
- 
- 	return 0;
- }
-@@ -262,7 +262,7 @@ int cam_flash_off(struct cam_flash_ctrl *flash_ctrl)
- 
- 	if (flash_ctrl->switch_trigger)
- 		cam_res_mgr_led_trigger_event(flash_ctrl->switch_trigger,
--			LED_SWITCH_OFF);
-+			LED_OFF);
- 
- 	cam_flash_set_gpios(flash_ctrl, false);
- 	flash_ctrl->flash_state = CAM_FLASH_STATE_START;
-diff --git a/drivers/media/platform/msm/camera/cam_smmu/cam_smmu_api.c b/drivers/media/platform/msm/camera/cam_smmu/cam_smmu_api.c
-index d6f7d1624..0704fcd45 100644
---- a/drivers/media/platform/msm/camera/cam_smmu/cam_smmu_api.c
-+++ b/drivers/media/platform/msm/camera/cam_smmu/cam_smmu_api.c
-@@ -2788,7 +2788,7 @@ int cam_smmu_destroy_handle(int handle)
- 		cam_smmu_clean_kernel_buffer_list(idx);
- 	}
- 
--	if (&iommu_cb_set.cb_info[idx].is_secure) {
-+	if (iommu_cb_set.cb_info[idx].is_secure) {
- 		if (iommu_cb_set.cb_info[idx].secure_count == 0) {
- 			mutex_unlock(&iommu_cb_set.cb_info[idx].lock);
- 			return -EPERM;
-diff --git a/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c b/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
-index 17f22f189..8acf49b3e 100644
---- a/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
-+++ b/drivers/platform/msm/ipa/ipa_v3/rmnet_ipa.c
-@@ -460,9 +460,9 @@ int ipa3_copy_ul_filter_rule_to_ipa(struct ipa_install_fltr_rule_req_msg_v01
- 			goto failure;
- 		}
- 		ipa3_qmi_ctx->q6_ul_filter_rule[i].ip =
--			rule_req->filter_spec_ex_list[i].ip_type;
-+			(enum ipa_ip_type)rule_req->filter_spec_ex_list[i].ip_type;
- 		ipa3_qmi_ctx->q6_ul_filter_rule[i].action =
--			rule_req->filter_spec_ex_list[i].filter_action;
-+			(enum ipa_flt_action)rule_req->filter_spec_ex_list[i].filter_action;
- 		if (rule_req->filter_spec_ex_list[i].
- 			is_routing_table_index_valid == true)
- 			ipa3_qmi_ctx->q6_ul_filter_rule[i].rt_tbl_idx =
-diff --git a/drivers/power/supply/qcom/qpnp-fg-gen3.c b/drivers/power/supply/qcom/qpnp-fg-gen3.c
-index 026300775..e23371d65 100644
---- a/drivers/power/supply/qcom/qpnp-fg-gen3.c
-+++ b/drivers/power/supply/qcom/qpnp-fg-gen3.c
-@@ -3921,7 +3921,7 @@ static int fg_somc_write_back_sram_params(struct fg_chip *chip)
- 	/* Rewrite the CYCLE_COUNT */
- 	rc = fg_sram_write(chip, CYCLE_COUNT_WORD, CYCLE_COUNT_OFFSET,
- 			(u8 *)&chip->cyc_ctr.count,
--			sizeof(chip->cyc_ctr.count) / sizeof(u8 *),
-+			sizeof(chip->cyc_ctr.count) / sizeof(chip->cyc_ctr.count[0]),
- 			FG_IMA_DEFAULT);
- 	if (rc < 0) {
- 		pr_err("Error in rewriting cycle counter, rc=%d\n", rc);
-diff --git a/drivers/soc/qcom/icnss.c b/drivers/soc/qcom/icnss.c
-index c83945318..962eff19a 100644
---- a/drivers/soc/qcom/icnss.c
-+++ b/drivers/soc/qcom/icnss.c
-@@ -3648,7 +3648,7 @@ int icnss_wlan_enable(struct device *dev, struct icnss_wlan_enable_cfg *config,
- 	if (ret)
- 		goto out;
- skip:
--	ret = wlfw_wlan_mode_send_sync_msg(mode);
-+	ret = wlfw_wlan_mode_send_sync_msg((enum wlfw_driver_mode_enum_v01)mode);
- out:
- 	if (test_bit(SKIP_QMI, &quirks))
- 		ret = 0;
-diff --git a/drivers/soc/qcom/msm_minidump.c b/drivers/soc/qcom/msm_minidump.c
-index 30b69c847..074616f63 100644
---- a/drivers/soc/qcom/msm_minidump.c
-+++ b/drivers/soc/qcom/msm_minidump.c
-@@ -348,7 +348,7 @@ static int msm_minidump_add_header(void)
- 
- 	/* 4th section is linux banner */
- 	banner = (char *)ehdr + strtbl_off + MAX_STRTBL_SIZE;
--	strlcpy(banner, linux_banner, strlen(linux_banner) + 1);
-+	strlcpy(banner, linux_banner, sizeof(banner));
- 
- 	shdr->sh_type = SHT_PROGBITS;
- 	shdr->sh_offset = (elf_addr_t)(strtbl_off + MAX_STRTBL_SIZE);
-diff --git a/drivers/staging/android/lowmemorykiller.h b/drivers/staging/android/lowmemorykiller.h
-index d7ebe98a7..5ecacc59b 100644
---- a/drivers/staging/android/lowmemorykiller.h
-+++ b/drivers/staging/android/lowmemorykiller.h
-@@ -54,7 +54,7 @@ static inline int task_trylock_lmk(struct task_struct *p)
-  */
- #if LINUX_VERSION_CODE <= KERNEL_VERSION(4, 0, 0)
- #define LMK_TAG_TASK_DIE(x) set_tsk_thread_flag(x, TIF_MEMDIE)
--#elseif LINUX_VERSION_CODE <= KERNEL_VERSION(4, 5, 0)
-+#elif LINUX_VERSION_CODE <= KERNEL_VERSION(4, 5, 0)
- #define LMK_TAG_TASK_DIE(x) mark_oom_victim(x)
- #else
- #define LMK_TAG_TASK_DIE(x)			\
+diff --git a/arch/arm64/Makefile b/arch/arm64/Makefile
+index 715422cdc..3fc5b31c0 100644
+--- a/arch/arm64/Makefile
++++ b/arch/arm64/Makefile
+@@ -66,11 +66,7 @@ ifeq ($(CONFIG_COMPAT_VDSO), y)
+     $(error CROSS_COMPILE_ARM32 not defined or empty, the compat vDSO will not be built)
+   else ifeq ($(cc-name),clang)
+     export CLANG_TRIPLE_ARM32 ?= $(CROSS_COMPILE_ARM32)
+-    export CLANG_TARGET_ARM32 := --target=arm-linux-gnueabi
+-    export GCC_TOOLCHAIN32_DIR := $(dir $(shell which $(CROSS_COMPILE_ARM32)ld))
+-    export GCC_TOOLCHAIN32 := $(realpath $(GCC_TOOLCHAIN32_DIR)/..)
+-    export CLANG_PREFIX32 := --prefix=$(GCC_TOOLCHAIN32_DIR)
+-    export CLANG_GCC32_TC := --gcc-toolchain=$(GCC_TOOLCHAIN32)
++    export CLANG_TARGET_ARM32 := --target=$(notdir $(CLANG_TRIPLE_ARM32:%-=%))
+     export CONFIG_VDSO32 := y
+     vdso32 := -DCONFIG_VDSO32=1
+   else ifeq ($(shell which $(CROSS_COMPILE_ARM32)$(cc-name) 2> /dev/null),)
 diff --git a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
-index 089fc040e..62db79e91 100644
+index 2f7bdecf9..0dd7b0c51 100644
 --- a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
 +++ b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_main.c
-@@ -1747,7 +1747,7 @@ hif_send_head(struct hif_opaque_softc *hif_ctx,
+@@ -1750,7 +1750,7 @@ hif_send_head(struct hif_opaque_softc *hif_ctx,
  
  	if (qdf_unlikely(ce_hdl == NULL)) {
  		HIF_ERROR("%s: error CE handle is null", __func__);
@@ -266,19 +40,6 @@ index 089fc040e..62db79e91 100644
  	}
  
  	QDF_NBUF_UPDATE_TX_PKT_COUNT(nbuf, QDF_NBUF_TX_PKT_HIF);
-diff --git a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
-index a68a0cd6e..e1ed62570 100644
---- a/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
-+++ b/drivers/staging/qca-wifi-host-cmn/hif/src/ce/ce_service.c
-@@ -2770,7 +2770,7 @@ struct ce_ops ce_service_legacy = {
- };
- 
- 
--struct ce_ops *ce_services_legacy()
-+struct ce_ops *ce_services_legacy(void)
- {
- 	return &ce_service_legacy;
- }
 diff --git a/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h b/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h
 index 00fe80602..3b37ad2af 100644
 --- a/drivers/staging/qca-wifi-host-cmn/qdf/inc/qdf_status.h
@@ -291,32 +52,6 @@ index 00fe80602..3b37ad2af 100644
  	QDF_STATUS_SUCCESS,
  	QDF_STATUS_E_RESOURCES,
  	QDF_STATUS_E_NOMEM,
-diff --git a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
-index b2f627490..12d365372 100644
---- a/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
-+++ b/drivers/staging/qca-wifi-host-cmn/target_if/core/src/target_if_main.c
-@@ -78,7 +78,7 @@
- 
- static struct target_if_ctx *g_target_if_ctx;
- 
--struct target_if_ctx *target_if_get_ctx()
-+struct target_if_ctx *target_if_get_ctx(void)
- {
- 	return g_target_if_ctx;
- }
-diff --git a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
-index 6aa77c3b4..62bdb253c 100644
---- a/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
-+++ b/drivers/staging/qca-wifi-host-cmn/wlan_cfg/wlan_cfg.c
-@@ -289,7 +289,7 @@ struct wlan_cfg_dp_pdev_ctxt {
-  *
-  * Return: wlan_cfg_ctx - Handle to Configuration context
-  */
--struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach()
-+struct wlan_cfg_dp_soc_ctxt *wlan_cfg_soc_attach(void)
- {
- 	int i = 0;
- 
 diff --git a/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c b/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c
 index b2ca24249..04fe0ad00 100644
 --- a/drivers/staging/qcacld-3.0/core/dp/htt/htt_h2t.c
@@ -339,95 +74,6 @@ index b2ca24249..04fe0ad00 100644
  	}
  	/*
  	 * Set the length of the message.
-diff --git a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
-index 87af8dc33..682c6e5c7 100644
---- a/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
-+++ b/drivers/staging/qcacld-3.0/core/mac/src/include/parser_api.h
-@@ -1120,7 +1120,7 @@ QDF_STATUS populate_dot11f_rrm_ie(tpAniSirGlobal pMac,
- 				tpPESession psessionEntry);
- 
- void populate_mdie(tpAniSirGlobal pMac, tDot11fIEMobilityDomain * pDot11f,
--		   uint8_t mdie[]);
-+		   uint8_t mdie[SIR_MDIE_SIZE]);
- 
- #ifdef WLAN_FEATURE_FILS_SK
- /**
-diff --git a/drivers/usb/gadget/function/f_accessory.c b/drivers/usb/gadget/function/f_accessory.c
-index bf3743882..aa52f1444 100644
---- a/drivers/usb/gadget/function/f_accessory.c
-+++ b/drivers/usb/gadget/function/f_accessory.c
-@@ -80,13 +80,13 @@ struct acc_dev {
- 	/* online indicates state of function_set_alt & function_unbind
- 	 * set to 1 when we connect
- 	 */
--	int online:1;
-+	unsigned int online:1;
- 
- 	/* disconnected indicates state of open & release
- 	 * Set to 1 when we disconnect.
- 	 * Not cleared until our file is closed.
- 	 */
--	int disconnected:1;
-+	unsigned int disconnected:1;
- 
- 	/* strings sent by the host */
- 	char manufacturer[ACC_STRING_SIZE];
-diff --git a/include/linux/leds.h b/include/linux/leds.h
-index b27315c80..c042ab276 100644
---- a/include/linux/leds.h
-+++ b/include/linux/leds.h
-@@ -27,6 +27,7 @@ struct device;
- 
- enum led_brightness {
- 	LED_OFF		= 0,
-+	LED_ON		= 1,
- 	LED_HALF	= 127,
- 	LED_FULL	= 255,
- };
-diff --git a/scripts/kallsyms.c b/scripts/kallsyms.c
-index 836341206..052b4d3d1 100644
---- a/scripts/kallsyms.c
-+++ b/scripts/kallsyms.c
-@@ -85,7 +85,7 @@ static void usage(void)
-  * This ignores the intensely annoying "mapping symbols" found
-  * in ARM ELF files: $a, $t and $d.
-  */
--static inline int is_arm_mapping_symbol(const char *str)
-+static inline __attribute_maybe_unused__ int is_arm_mapping_symbol(const char *str)
- {
- 	return str[0] == '$' && strchr("axtd", str[1])
- 	       && (str[2] == '\0' || str[2] == '.');
-diff --git a/scripts/kconfig/symbol.c b/scripts/kconfig/symbol.c
-index 243229848..2e2cba98e 100644
---- a/scripts/kconfig/symbol.c
-+++ b/scripts/kconfig/symbol.c
-@@ -1127,11 +1127,12 @@ static void sym_check_print_recursive(struct symbol *last_sym)
- 					break;
- 			}
- 		}
--		if (stack->sym == last_sym)
-+		if (stack->sym == last_sym){
- 			fprintf(stderr, "%s:%d:error: recursive dependency detected!\n",
- 				prop->file->name, prop->lineno);
- 			fprintf(stderr, "For a resolution refer to Documentation/kbuild/kconfig-language.txt\n");
- 			fprintf(stderr, "subsection \"Kconfig recursive dependency limitations\"\n");
-+		}
- 		if (stack->expr) {
- 			fprintf(stderr, "%s:%d:\tsymbol %s %s value contains %s\n",
- 				prop->file->name, prop->lineno,
-diff --git a/techpack/audio/asoc/codecs/wsa881x.c b/techpack/audio/asoc/codecs/wsa881x.c
-index 5151790ef..cbf3b4fc1 100644
---- a/techpack/audio/asoc/codecs/wsa881x.c
-+++ b/techpack/audio/asoc/codecs/wsa881x.c
-@@ -389,7 +389,7 @@ static ssize_t wsa881x_swrslave_reg_show(char __user *ubuf, size_t count,
- 			continue;
- 		swr_read(dbgwsa881x->swr_slave, devnum,
- 			i, &reg_val, 1);
--		len = snprintf(tmp_buf, 25, "0x%.3x: 0x%.2x\n", i,
-+		len = snprintf(tmp_buf, sizeof(tmp_buf), "0x%.3x: 0x%.2x\n", i,
- 			       (reg_val & 0xFF));
- 		if ((total + len) >= count - 1)
- 			break;
 -- 
 2.51.0
 
